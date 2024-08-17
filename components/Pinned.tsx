@@ -22,7 +22,7 @@ const flashCards: FlashCardProps[] = [
 export default function Pinned() {
   return (
     <View className="px-6 py-4">
-      <SectionHeader title="Pinned" link="/pinned" />
+      <SectionHeader title="Pinned" link="/form" />
       <View className="flex-row justify-between py-5">
         {flashCards.map((data) => (
           <FlashCard {...data} />
