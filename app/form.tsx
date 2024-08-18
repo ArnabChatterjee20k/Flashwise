@@ -1,12 +1,14 @@
 import Container from "@/components/Container";
 import IconButton from "@/components/IconButton";
 import ThemedText from "@/components/ThemedText";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { PaperProvider, TextInput } from "react-native-paper";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { useMemo, useRef } from "react";
+import { PaperProvider, TextInput, Menu, Divider } from "react-native-paper";
+import BottomSheet from "@gorhom/bottom-sheet";
+import { useMemo, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Link, useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Form() {
   // at points the bar should stop while dragging
@@ -44,10 +46,6 @@ function Card() {
     <View className="rounded-2xl p-4" style={{ backgroundColor: "#242e31" }}>
       <View className="flex-row items-center justify-between">
         <ThemedText className="mx-2 text-xl font-bold">Card 1</ThemedText>
-        <IconButton
-          icon="ellipsis1"
-          style={{ transform: [{ rotate: "90deg" }] }}
-        />
       </View>
       <View className="flex-row mb-3">
         <TextInput
@@ -55,6 +53,7 @@ function Card() {
           placeholderTextColor="#a1a1a1"
           textColor="white"
           className="flex-1 bg-transparent"
+          multiline
         />
       </View>
       <TextInput
@@ -87,8 +86,22 @@ interface HeaderProps {
   savingStatus: boolean;
 }
 function Header({ savingStatus }: HeaderProps) {
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const openMenu = () => setMenuVisible(true);
+  const closeMenu = () => setMenuVisible(false);
+  const router = useRouter();
+  const goToAI = () => {
+    router.push({
+      pathname: "/ai",
+      params: { flashcard: "OS", flashcardID: "12" },
+    });
+  };
+  const save = () => {
+    alert("save");
+  };
   return (
-    <View className="flex-row py-4 items-center justify-between">
+    <SafeAreaView className="flex-row mb-4 items-center justify-between">
       <IconButton icon="arrowleft" style={styles.icon} />
       <View className="items-center">
         <ThemedText className="text-2xl">Create Cards</ThemedText>
@@ -96,8 +109,20 @@ function Header({ savingStatus }: HeaderProps) {
           {savingStatus ? "Saved" : "Not Saved"}
         </ThemedText>
       </View>
-      <IconButton icon="delete" style={styles.icon} />
-    </View>
+      <Menu
+        visible={menuVisible}
+        onDismiss={closeMenu}
+        contentStyle={{ marginTop: 60 }}
+        mode="elevated"
+        anchor={
+          <IconButton icon="ellipsis1" style={styles.icon} onPress={openMenu} />
+        }
+        anchorPosition="bottom"
+      >
+        <Menu.Item title="Save" onPress={save} />
+        <Menu.Item title="Create with AI" onPress={goToAI} />
+      </Menu>
+    </SafeAreaView>
   );
 }
 

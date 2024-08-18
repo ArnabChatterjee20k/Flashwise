@@ -4,12 +4,13 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import IconButton from "@/components/IconButton";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -30,6 +31,8 @@ export default function RootLayout() {
     return null;
   }
 
+  const router = useRouter()
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <>
@@ -39,6 +42,16 @@ export default function RootLayout() {
           <Stack.Screen
             name="form"
             options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="ai"
+            options={{
+              presentation: "modal",
+              title: "Flash Card AI",
+              headerTitleStyle: { color: "white" },
+              headerStyle: { backgroundColor: "black" },
+              headerLeft: (props) => <IconButton icon="arrowleft" onPress={()=>router.back()}/>
+            }}
           />
         </Stack>
       </>

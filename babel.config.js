@@ -6,6 +6,7 @@ module.exports = function (api) {
       "nativewind/babel",
       "react-native-paper/babel",
       "react-native-reanimated/plugin",
+      ["@babel/plugin-proposal-decorators", { legacy: true }],
     ],
   };
 };
