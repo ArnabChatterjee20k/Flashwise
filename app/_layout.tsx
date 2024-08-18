@@ -11,9 +11,15 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import IconButton from "@/components/IconButton";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const convex = new ConvexReactClient(
+  "https://admired-cormorant-413.convex.cloud",
+  { skipConvexDeploymentUrlCheck: true }
+);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -31,16 +37,18 @@ export default function RootLayout() {
     return null;
   }
 
-  const router = useRouter()
-
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <>
+    <>
+      <ConvexProvider client={convex}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen
             name="form"
+            options={{ presentation: "modal", headerShown: false }}
+          />
+          <Stack.Screen
+            name="flash"
             options={{ presentation: "modal", headerShown: false }}
           />
           <Stack.Screen
@@ -50,11 +58,15 @@ export default function RootLayout() {
               title: "Flash Card AI",
               headerTitleStyle: { color: "white" },
               headerStyle: { backgroundColor: "black" },
-              headerLeft: (props) => <IconButton icon="arrowleft" onPress={()=>router.back()}/>
+              headerLeft: (props) => <BackBtn />,
             }}
           />
         </Stack>
-      </>
-    </ThemeProvider>
+      </ConvexProvider>
+    </>
   );
 }
+const BackBtn = () => {
+  const router = useRouter();
+  return <IconButton icon="arrowleft" onPress={() => router.back()} />;
+};

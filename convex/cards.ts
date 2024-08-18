@@ -11,6 +11,31 @@ import { generateCards } from "./utils/ai";
 import { CardAISchema } from "./validators";
 import { z } from "zod";
 
+export const getCards = query({
+  args: { flashCardId: v.id("flash") },
+  handler: async (ctx, { flashCardId }) => {
+    const cards = await ctx.db
+      .query("cards")
+      .withIndex("by_flashid")
+      .filter((q) => q.eq(q.field("flashId"), flashCardId))
+      .collect();
+    return cards;
+  },
+});
+
+export const getFlashCard = query({
+  handler: async (ctx) => {
+    return ctx.db.query("flash").collect();
+  },
+});
+
+export const getProjectDetails = query({
+  args: { id: v.id("flash") },
+  handler: async (ctx, { id }) => {
+    return ctx.db.get(id);
+  },
+});
+
 export const createFlashCard = mutation({
   args: { title: v.optional(v.string()) },
   handler: async (ctx, { title }) => {

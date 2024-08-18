@@ -1,4 +1,7 @@
 import ThemedText from "@/components/ThemedText";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useAction, useQuery } from "convex/react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -16,9 +19,12 @@ const Form = () => {
   const [count, setCount] = useState("");
   const params = useLocalSearchParams<{
     flashcard: string;
-    flashcardID: string;
+    flashcardID: Id<"flash">;
   }>();
-  console.log(params);
+  const createWithAIAction = useAction(api.cards.createQuestionAI);
+  const projectDetails = useQuery(api.cards.getProjectDetails, {
+    id: params.flashcardID,
+  });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -49,9 +55,17 @@ const Form = () => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => console.log("Form submitted")}
+          onPress={() =>
+            createWithAIAction({
+              prompt: prompt,
+              count: parseInt(count),
+              flashCardId: params.flashcardID,
+            })
+          }
         >
-          <Text style={styles.buttonText}>Submit</Text>
+          <Text style={styles.buttonText}>
+            {projectDetails?.generating ? "Loading..." : "Submit"}
+          </Text>
         </TouchableOpacity>
       </>
     </ScrollView>

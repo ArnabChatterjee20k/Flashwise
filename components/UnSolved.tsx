@@ -37,7 +37,7 @@ export default function UnSolved() {
   return (
     <View className="px-6 py-4">
       <SectionHeader title="Unsolved" link="/pinned" />
-      <View className="flex-row justify-between py-5 flex-wrap" style={{rowGap:25}}>
+      <View className="flex-row justify-evenly py-5 flex-wrap" style={{rowGap:25}}>
         {flashCards.map((data) => (
           <FlashCard {...data} key={data.title}/>
         ))}

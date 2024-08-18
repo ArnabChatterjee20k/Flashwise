@@ -2,54 +2,103 @@ import Container from "@/components/Container";
 import IconButton from "@/components/IconButton";
 import ThemedText from "@/components/ThemedText";
 import { AntDesign } from "@expo/vector-icons";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Vibration,
+  ScrollView,
+} from "react-native";
 import { PaperProvider, TextInput, Menu, Divider } from "react-native-paper";
 import BottomSheet from "@gorhom/bottom-sheet";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Link, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueries, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 export default function Form() {
+  const params = useLocalSearchParams<{ flashCardID: Id<"flash"> }>();
+  console.log({ params });
+  if (!params.flashCardID) return <Text>{JSON.stringify(params)}</Text>;
+  const flashCardDetails = useQuery(api.cards.getProjectDetails, {
+    id: params.flashCardID,
+  });
+  const cards = useQuery(api.cards.getCards, {
+    flashCardId: params.flashCardID,
+  });
   // at points the bar should stop while dragging
   const snapPoints = useMemo(() => ["20%"], []);
   const ref = useRef<BottomSheet>(null);
+  const openSheet = () => {
+    Vibration.vibrate(1);
+    ref.current?.expand();
+  };
 
+  useLayoutEffect(() => {
+    ref.current?.close();
+  }, []);
   return (
     <PaperProvider>
       <GestureHandlerRootView>
         <Container className="gap-2">
-          <Header savingStatus={true} />
-          <View>
-            <Card />
-          </View>
+          <Header
+            savingStatus={true}
+            id={params.flashCardID}
+            name={flashCardDetails?.name as string}
+          />
+          <ScrollView>
+            {cards?.map(({ question, answer }, index) => (
+              <Card
+                question={question}
+                answer={answer}
+                cardNumber={index + 1}
+                onHold={openSheet}
+              />
+            ))}
+          </ScrollView>
         </Container>
         <BottomSheet
           ref={ref}
-          index={0}
+          index={-1}
           snapPoints={snapPoints}
           enablePanDownToClose={true}
           handleIndicatorStyle={{ backgroundColor: "#fff" }}
           backgroundStyle={{ backgroundColor: "#1d0f4e" }}
         >
           <View style={styles.contentContainer}>
-            <Text style={styles.containerHeadline}>Aes</Text>
+            <Text style={styles.containerHeadline}>{}</Text>
           </View>
         </BottomSheet>
       </GestureHandlerRootView>
     </PaperProvider>
   );
 }
-
-function Card() {
+interface CardProps {
+  onHold: (id: string) => void;
+  question: string;
+  answer: string;
+  cardNumber: number;
+}
+function Card({ onHold, question, answer, cardNumber }: CardProps) {
   return (
-    <View className="rounded-2xl p-4" style={{ backgroundColor: "#242e31" }}>
+    <TouchableOpacity
+      onLongPress={() => onHold("12")}
+      className="rounded-2xl p-4 my-2"
+      style={{ backgroundColor: "#242e31" }}
+    >
       <View className="flex-row items-center justify-between">
-        <ThemedText className="mx-2 text-xl font-bold">Card 1</ThemedText>
+        <ThemedText className="mx-2 text-xl font-bold">
+          Card {cardNumber}
+        </ThemedText>
       </View>
       <View className="flex-row mb-3">
         <TextInput
           placeholder="Enter your question"
+          value={question}
           placeholderTextColor="#a1a1a1"
           textColor="white"
           className="flex-1 bg-transparent"
@@ -57,6 +106,7 @@ function Card() {
         />
       </View>
       <TextInput
+        value={answer}
         placeholder="Enter your answer"
         placeholderTextColor="#a1a1a1"
         textColor="white"
@@ -66,7 +116,7 @@ function Card() {
       <View className="flex-row space-x-4 justify-center">
         <AddOptionsButton />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -84,25 +134,29 @@ function AddOptionsButton() {
 
 interface HeaderProps {
   savingStatus: boolean;
+  name: string;
+  id: Id<"flash">;
 }
-function Header({ savingStatus }: HeaderProps) {
+function Header({ savingStatus, id, name }: HeaderProps) {
   const [menuVisible, setMenuVisible] = useState(false);
-
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
   const router = useRouter();
   const goToAI = () => {
     router.push({
       pathname: "/ai",
-      params: { flashcard: "OS", flashcardID: "12" },
+      params: { flashcard: name, flashcardID: id },
     });
   };
   const save = () => {
     alert("save");
   };
+  const goBack = () => {
+    router.back();
+  };
   return (
     <SafeAreaView className="flex-row mb-4 items-center justify-between">
-      <IconButton icon="arrowleft" style={styles.icon} />
+      <IconButton onPress={goBack} icon="arrowleft" style={styles.icon} />
       <View className="items-center">
         <ThemedText className="text-2xl">Create Cards</ThemedText>
         <ThemedText className="text-yellow-400">
