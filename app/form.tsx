@@ -69,8 +69,9 @@ export default function Form() {
             <IconButton icon="edit" onPress={() => ref.current?.expand()} />
           </View>
           <ScrollView>
-            {cards?.map(({ question, answer }, index) => (
+            {cards?.map(({ question, answer, _id }, index) => (
               <Card
+                id={_id}
                 question={question}
                 answer={answer}
                 cardNumber={index + 1}
@@ -160,11 +161,33 @@ interface CardProps {
   question: string;
   answer: string;
   cardNumber: number;
+  id: string;
 }
-function Card({ onHold, question, answer, cardNumber }: CardProps) {
+function Card({ onHold, question, answer, cardNumber, id }: CardProps) {
+  const [qs, setQs] = useState(question);
+  const [ans, setAns] = useState(answer);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (question) setQs(question);
+    if (answer) setAns(answer);
+  }, [question, answer]);
+  const updateData = useMutation(api.cards.updateCardData);
+  const update = async () => {
+    setLoading(true);
+    try {
+      await updateData({ id: id as Id<"cards">, question: qs, answer: ans });
+    } catch (error) {
+      alert("Some error happened");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const reset = () => {
+    setQs(question);
+    setAns(answer);
+  };
   return (
-    <TouchableOpacity
-      onLongPress={() => onHold("12")}
+    <View
       className="rounded-2xl p-4 my-2"
       style={{ backgroundColor: "#242e31" }}
     >
@@ -176,25 +199,36 @@ function Card({ onHold, question, answer, cardNumber }: CardProps) {
       <View className="flex-row mb-3">
         <TextInput
           placeholder="Enter your question"
-          value={question}
+          value={qs}
           placeholderTextColor="#a1a1a1"
           textColor="white"
           className="flex-1 bg-transparent"
           multiline
+          onChangeText={(text) => setQs(text)}
         />
       </View>
       <TextInput
-        value={answer}
+        value={ans}
         placeholder="Enter your answer"
         placeholderTextColor="#a1a1a1"
         textColor="white"
         className="mb-3 bg-transparent"
         multiline
+        onChangeText={(text) => setAns(text)}
       />
-      <View className="flex-row space-x-4 justify-center">
-        <AddOptionsButton />
+      <View className="flex flex-row space-x-6 justify-end px-3">
+        <TouchableOpacity onPress={reset}>
+          <ThemedText className="text-lg font-semibold text-[#4d88f5]">
+            Reset
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={update} disabled={loading}>
+          <ThemedText className="text-lg font-semibold text-[#4d88f5]">
+            {loading ? "Saving..." : "Save"}
+          </ThemedText>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 

@@ -59,6 +59,20 @@ export const createFlashCard = mutation({
   },
 });
 
+export const updateCardData = mutation({
+  args: {
+    id: v.id("cards"),
+    question: v.optional(v.string()),
+    answer: v.optional(v.string()),
+  },
+  handler(ctx, { id, answer, question }) {
+    ctx.db.patch(id, {
+      ...(question && { question: question }),
+      ...(answer && { answer: answer }),
+    });
+  },
+});
+
 export const updateFlashCardStatus = internalMutation({
   args: { id: v.id("flash"), status: v.boolean() },
   handler: async (ctx, { id, status }) => {
