@@ -12,11 +12,18 @@ import {
 } from "react-native";
 import { PaperProvider, TextInput, Menu, Divider } from "react-native-paper";
 import BottomSheet from "@gorhom/bottom-sheet";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQueries, useQuery } from "convex/react";
+import { useMutation, useQueries, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
@@ -27,20 +34,27 @@ export default function Form() {
   const flashCardDetails = useQuery(api.cards.getProjectDetails, {
     id: params.flashCardID,
   });
+  const flash = useQuery(api.cards.getFlashCardById, {
+    id: params.flashCardID,
+  });
+  const flashTitle = flash?.length ? flash[0].name : "";
   const cards = useQuery(api.cards.getCards, {
     flashCardId: params.flashCardID,
   });
+  const changeFlashCardTitle = useMutation(api.cards.updateFlashCard);
   // at points the bar should stop while dragging
-  const snapPoints = useMemo(() => ["20%"], []);
+  const snapPoints = useMemo(() => ["25%"], []);
   const ref = useRef<BottomSheet>(null);
   const openSheet = () => {
     Vibration.vibrate(1);
     ref.current?.expand();
   };
+  useFocusEffect(
+    useCallback(() => {
+      return () => ref.current?.close();
+    }, [])
+  );
 
-  useLayoutEffect(() => {
-    ref.current?.close();
-  }, []);
   return (
     <PaperProvider>
       <GestureHandlerRootView>
@@ -48,8 +62,12 @@ export default function Form() {
           <Header
             savingStatus={true}
             id={params.flashCardID}
-            name={flashCardDetails?.name as string}
+            name={flashTitle}
           />
+          <View className="flex-row items-center">
+            <Text className="text-white text-lg">{flashTitle}</Text>
+            <IconButton icon="edit" onPress={() => ref.current?.expand()} />
+          </View>
           <ScrollView>
             {cards?.map(({ question, answer }, index) => (
               <Card
@@ -66,15 +84,75 @@ export default function Form() {
           index={-1}
           snapPoints={snapPoints}
           enablePanDownToClose={true}
-          handleIndicatorStyle={{ backgroundColor: "#fff" }}
-          backgroundStyle={{ backgroundColor: "#1d0f4e" }}
+          handleIndicatorStyle={{ backgroundColor: "white" }}
+          backgroundStyle={{ backgroundColor: "#232323" }}
         >
-          <View style={styles.contentContainer}>
-            <Text style={styles.containerHeadline}>{}</Text>
-          </View>
+          <TitleChangeBox
+            id={params.flashCardID}
+            title={flashTitle}
+            onCancel={() => ref?.current?.close()}
+          />
         </BottomSheet>
       </GestureHandlerRootView>
     </PaperProvider>
+  );
+}
+
+interface TitleChangeBoxProps {
+  title: string;
+  onCancel: () => void;
+  id: string;
+}
+function TitleChangeBox({ title, onCancel, id }: TitleChangeBoxProps) {
+  const [state, setState] = useState(title);
+  const [loading, setLoading] = useState(false);
+  const updateTitle = useMutation(api.cards.updateFlashCard);
+  const onSave = async () => {
+    try {
+      setLoading(true);
+      await updateTitle({ id: id as Id<"flash">, title: state });
+    } catch (error) {
+      alert("some error happened while updating title");
+    } finally {
+      setLoading(false);
+      onCancel();
+    }
+  };
+  useEffect(() => {
+    setState(title || ""); // Update state if title changes
+  }, [title]);
+
+  return (
+    <View className="gap-2 p-6">
+      <ThemedText className="text-lg font-bold">Enter your {title}</ThemedText>
+      <TextInput
+        placeholder="Enter your flash card title"
+        value={state}
+        placeholderTextColor="#a1a1a1"
+        textColor="white"
+        className="mb-3 bg-transparent"
+        underlineColor="#4d88f5"
+        mode="flat"
+        onChangeText={(text) => setState(text)}
+      />
+      <View className="flex flex-row space-x-6 justify-end px-3">
+        <TouchableOpacity
+          onPress={() => {
+            onCancel();
+            setState(title);
+          }}
+        >
+          <ThemedText className="text-lg font-semibold text-[#4d88f5]">
+            Cancel
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onSave} disabled={loading}>
+          <ThemedText className="text-lg font-semibold text-[#4d88f5]">
+            {loading ? "Saving..." : "Save"}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 interface CardProps {

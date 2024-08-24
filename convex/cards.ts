@@ -29,6 +29,17 @@ export const getFlashCard = query({
   },
 });
 
+export const getFlashCardById = query({
+  args: { id: v.id("flash") },
+  handler: (ctx, { id }) => {
+    return ctx.db
+      .query("flash")
+      .withIndex("by_id")
+      .filter((q) => q.eq(q.field("_id"), id))
+      .take(1);
+  },
+});
+
 export const getProjectDetails = query({
   args: { id: v.id("flash") },
   handler: async (ctx, { id }) => {
