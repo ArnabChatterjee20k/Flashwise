@@ -8,11 +8,12 @@ import {
   Text,
   Dimensions,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
+  Vibration,
+  TouchableOpacity,
 } from "react-native";
 import { FontAwesome, Ionicons, AntDesign } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated as RNAnimated } from "react-native";
 import {
   Gesture,
@@ -29,6 +30,7 @@ import {
   Extrapolation,
   interpolateColor,
 } from "react-native-reanimated";
+import BottomSheet from "@gorhom/bottom-sheet";
 import Animated from "react-native-reanimated";
 
 export default function TabTwoScreen() {
@@ -41,6 +43,14 @@ export default function TabTwoScreen() {
     router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
   };
   const cards = useQuery(api.cards.getFlashCard);
+
+  const snapPoints = useMemo(() => ["40%"], []);
+  const sheetRef = useRef<BottomSheet>(null);
+  const openSheet = () => {
+    Vibration.vibrate(1);
+    sheetRef.current?.expand();
+  };
+
   return (
     <GestureHandlerRootView
       className="px-6 py-4"
@@ -51,8 +61,14 @@ export default function TabTwoScreen() {
         className="px-2 py-5"
         ItemSeparatorComponent={() => <View className="my-3"></View>}
         data={cards}
-        renderItem={({ item: { name, generating } }) => (
-          <Card title={name} generating={generating || false} cards={12} />
+        renderItem={({ item: { _id, name, generating } }) => (
+          <Card
+            _id={_id}
+            title={name}
+            generating={generating || false}
+            cards={12}
+            onpress={openSheet}
+          />
         )}
       />
       <View
@@ -61,42 +77,53 @@ export default function TabTwoScreen() {
       >
         <IconButton onPress={create} style={styles.fab} icon="plus" />
       </View>
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose={true}
+        handleIndicatorStyle={{ backgroundColor: "#fff" }}
+        backgroundStyle={{ backgroundColor: "#1d0f4e", zIndex: 10000 }}
+      >
+        <Text>hello</Text>
+      </BottomSheet>
     </GestureHandlerRootView>
   );
 }
 
 interface CardProps {
+  _id: string;
   title: string;
   cards: number;
   generating: boolean;
   color?: string;
+  onpress?: () => void;
 }
-function Card({ title, cards, generating }: CardProps) {
+function Card({ _id, title, cards, generating, onpress }: CardProps) {
   const [deleted, setDeleted] = useState(false);
   const swipeTranslateX = useSharedValue(0);
   const pressed = useSharedValue(false);
   const WIDTH_SCREEN = Dimensions.get("window").width;
   const MAX_SWIPE = WIDTH_SCREEN - 10;
+
   async function remove(title: string) {
     setDeleted(true);
-    alert(`delted ${title}`);
+    alert(`Deleted ${title}`);
   }
+
   const pan = Gesture.Pan()
     .onBegin(() => {
       pressed.value = true;
     })
     .onChange((e) => {
-      // Restrict swipe within the defined range
       if (e.translationX > 0 && e.translationX < MAX_SWIPE) {
         swipeTranslateX.value = e.translationX;
       }
     })
     .onFinalize(() => {
-      // Check if swipe exceeded the threshold for deletion
       const isShouldDelete = swipeTranslateX.value >= MAX_SWIPE - 20;
 
       if (isShouldDelete) {
-        // Trigger an alert with the message "Delete"
         swipeTranslateX.value = withTiming(
           WIDTH_SCREEN,
           undefined,
@@ -107,7 +134,6 @@ function Card({ title, cards, generating }: CardProps) {
           }
         );
       } else {
-        // Reset swipe position if threshold not met
         swipeTranslateX.value = withSpring(0);
       }
 
@@ -117,31 +143,30 @@ function Card({ title, cards, generating }: CardProps) {
   const transformStyle = useAnimatedStyle(() => {
     const backgroundColor = interpolateColor(
       swipeTranslateX.value,
-      [0, MAX_SWIPE], // Input range: no swipe to max swipe
-      ["#1B998B", "#FF0000"] // Output range: initial color to red
+      [0, MAX_SWIPE],
+      ["#1B998B", "#FF0000"]
     );
 
     return {
       transform: [{ translateX: swipeTranslateX.value }],
-      backgroundColor, // Add the interpolated background color
+      backgroundColor,
     };
   });
-  const opacityStyle = useAnimatedStyle(() => {
-    // Calculate the absolute value of swipeTranslateX to handle both left and right swipes
-    const absTranslateX = Math.abs(swipeTranslateX.value);
 
-    // Interpolate the opacity between 1 and 0 based on the swipe distance
+  const opacityStyle = useAnimatedStyle(() => {
+    const absTranslateX = Math.abs(swipeTranslateX.value);
     const opacity = interpolate(
       absTranslateX,
-      [0, MAX_SWIPE], // Input range (0 to MAX_SWIPE distance)
-      [0, 1], // Output range (full opacity to fully transparent)
-      Extrapolation.IDENTITY // Ensure it doesn't go below 0 or above 1
+      [0, MAX_SWIPE],
+      [0, 1],
+      Extrapolation.IDENTITY
     );
 
     return {
       opacity,
     };
   });
+  const AnimatedTouch = Animated.createAnimatedComponent(TouchableOpacity);
 
   return (
     <View className="flex flex-row items-center">
@@ -152,27 +177,37 @@ function Card({ title, cards, generating }: CardProps) {
         <Ionicons name="trash-bin" color="red" size={30} />
       </Animated.View>
       <GestureDetector gesture={pan}>
-        <Animated.View
-          className="w-[95%] h-36 rounded-lg px-6 py-3 justify-between relative"
-          style={[transformStyle, { backgroundColor: "#1B998B" }]}
-        >
-          <Text className="text-base font-bold text-white">{title}</Text>
-          <Text className="text-base font-normal text-white">
-            {cards} cards
-          </Text>
-          <View className="flex flex-row items-center gap-2">
-            {generating ? (
-              <Loader />
-            ) : (
-              <>
-                <Text className="text-base font-medium text-white">Ready</Text>
-                <FontAwesome name="rocket" color="white" size={22} />
-              </>
-            )}
-          </View>
-          <View className="absolute right-0 top-[50%] mx-3">
-            <Ionicons name="chevron-forward-outline" color="white" size={30} />
-          </View>
+        <Animated.View style={[transformStyle, { backgroundColor: "#1B998B" }]} className="w-[95%] h-36 rounded-lg px-6 py-3 relative">
+          <AnimatedTouch
+            onLongPress={onpress}
+            className="flex-1 justify-between"
+          >
+            <View>
+              <Text className="text-base font-bold text-white">{title}</Text>
+              <Text className="text-base font-normal text-white">
+                {cards} cards
+              </Text>
+            </View>
+            <View className="flex flex-row items-center gap-2">
+              {generating ? (
+                <Loader />
+              ) : (
+                <>
+                  <Text className="text-base font-medium text-white">
+                    Ready
+                  </Text>
+                  <FontAwesome name="rocket" color="white" size={22} />
+                </>
+              )}
+            </View>
+            <View className="absolute right-0 top-[40%] mx-3">
+              <Ionicons
+                name="chevron-forward-outline"
+                color="white"
+                size={30}
+              />
+            </View>
+          </AnimatedTouch>
         </Animated.View>
       </GestureDetector>
     </View>
