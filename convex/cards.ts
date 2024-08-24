@@ -56,11 +56,16 @@ export const updateFlashCardStatus = internalMutation({
 });
 
 export const updateFlashCard = mutation({
-  args: { title: v.string(), id: v.id("flash") },
-  handler: async (ctx, { title, id }) => {
+  args: {
+    title: v.optional(v.string()),
+    id: v.id("flash"),
+    pin: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { title, id, pin }) => {
     const flashCardTitle = title;
     await ctx.db.patch(id, {
-      name: flashCardTitle,
+      ...(title && { name: title }),
+      ...(pin !== undefined && { pinned: pin }),
     });
   },
 });

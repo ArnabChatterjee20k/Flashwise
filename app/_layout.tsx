@@ -13,6 +13,9 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import IconButton from "@/components/IconButton";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 
+import { Host } from "react-native-portalize";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -36,34 +39,36 @@ export default function RootLayout() {
   if (!loaded) {
     return null;
   }
-
+  // using Portal Host inside the GestureHandlerRootView so that we can use portalised ui inside the gesturehandler
   return (
-    <>
-      <ConvexProvider client={convex}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-          <Stack.Screen
-            name="form"
-            options={{ presentation: "modal", headerShown: false }}
-          />
-          <Stack.Screen
-            name="flash"
-            options={{ presentation: "modal", headerShown: false }}
-          />
-          <Stack.Screen
-            name="ai"
-            options={{
-              presentation: "modal",
-              title: "Flash Card AI",
-              headerTitleStyle: { color: "white" },
-              headerStyle: { backgroundColor: "black" },
-              headerLeft: (props) => <BackBtn />,
-            }}
-          />
-        </Stack>
-      </ConvexProvider>
-    </>
+    <ConvexProvider client={convex}>
+      <GestureHandlerRootView>
+        <Host>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+            <Stack.Screen
+              name="form"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="flash"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+            <Stack.Screen
+              name="ai"
+              options={{
+                presentation: "modal",
+                title: "Flash Card AI",
+                headerTitleStyle: { color: "white" },
+                headerStyle: { backgroundColor: "black" },
+                headerLeft: (props) => <BackBtn />,
+              }}
+            />
+          </Stack>
+        </Host>
+      </GestureHandlerRootView>
+    </ConvexProvider>
   );
 }
 const BackBtn = () => {

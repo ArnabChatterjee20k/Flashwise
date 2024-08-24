@@ -2,7 +2,7 @@ import IconButton from "@/components/IconButton";
 import { Colors } from "@/constants/Colors";
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Link, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -12,8 +12,14 @@ import {
   Vibration,
   TouchableOpacity,
 } from "react-native";
-import { FontAwesome, Ionicons, AntDesign } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FontAwesome,
+  Ionicons,
+  AntDesign,
+  MaterialIcons,
+  Entypo,
+} from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated as RNAnimated } from "react-native";
 import {
   Gesture,
@@ -32,6 +38,9 @@ import {
 } from "react-native-reanimated";
 import BottomSheet from "@gorhom/bottom-sheet";
 import Animated from "react-native-reanimated";
+import { Icon, Menu } from "react-native-paper";
+import { Portal } from "react-native-portalize";
+import { Id } from "@/convex/_generated/dataModel";
 
 export default function TabTwoScreen() {
   const window = Dimensions.get("window");
@@ -43,31 +52,50 @@ export default function TabTwoScreen() {
     router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
   };
   const cards = useQuery(api.cards.getFlashCard);
-
-  const snapPoints = useMemo(() => ["40%"], []);
+  const snapPoints = useMemo(() => ["25%"], []);
   const sheetRef = useRef<BottomSheet>(null);
-  const openSheet = () => {
+  const [sheetID, setSheetID] = useState("");
+  const currentInteractedCard = cards
+    ?.filter(({ _id }) => _id === sheetID)
+    .at(0);
+
+  const openSheet = (_id: string) => {
     Vibration.vibrate(1);
+    setSheetID(_id);
     sheetRef.current?.expand();
   };
-
+  const onCloseSheet = () => {
+    setSheetID("");
+  };
+  const goToForm = (flashCardId: string) => {
+    router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
+  };
+  useFocusEffect(
+    useCallback(() => {
+      return () => sheetRef.current?.close();
+    }, [])
+  );
+  const setPinnedCard = useMutation(api.cards.updateFlashCard);
   return (
-    <GestureHandlerRootView
+    <View
       className="px-6 py-4"
       style={{ backgroundColor: Colors.dark.background, flex: 1 }}
     >
+      {currentInteractedCard && <View style={styles.blurOverlay}></View>}
       <Text className="text-2xl text-white font-bold">Deck</Text>
       <FlatList
         className="px-2 py-5"
         ItemSeparatorComponent={() => <View className="my-3"></View>}
         data={cards}
-        renderItem={({ item: { _id, name, generating } }) => (
+        renderItem={({ item: { _id, name, generating, pinned } }) => (
           <Card
             _id={_id}
             title={name}
             generating={generating || false}
+            pinned={pinned || false}
             cards={12}
-            onpress={openSheet}
+            onpress={() => openSheet(_id)}
+            onclick={() => goToForm(_id)}
           />
         )}
       />
@@ -77,17 +105,64 @@ export default function TabTwoScreen() {
       >
         <IconButton onPress={create} style={styles.fab} icon="plus" />
       </View>
-      <BottomSheet
-        ref={sheetRef}
-        index={-1}
-        snapPoints={snapPoints}
-        enablePanDownToClose={true}
-        handleIndicatorStyle={{ backgroundColor: "#fff" }}
-        backgroundStyle={{ backgroundColor: "#1d0f4e", zIndex: 10000 }}
-      >
-        <Text>hello</Text>
-      </BottomSheet>
-    </GestureHandlerRootView>
+      <Portal>
+        <BottomSheet
+          onClose={onCloseSheet}
+          ref={sheetRef}
+          index={-1}
+          snapPoints={snapPoints}
+          enablePanDownToClose={true}
+          handleIndicatorStyle={{ backgroundColor: "white" }}
+          backgroundStyle={{ backgroundColor: "#232323" }}
+        >
+          <View style={{ flex: 1 }} className="p-6 space-y-4">
+            <TouchableOpacity
+              className="flex flex-row items-center justify-between px-2"
+              onPress={() => {
+                setPinnedCard({
+                  id: sheetID as Id<"flash">,
+                  pin: currentInteractedCard?.pinned ? false : true,
+                });
+              }}
+            >
+              <View className="flex flex-row gap-2 items-center">
+                <MaterialIcons
+                  name={
+                    currentInteractedCard?.pinned
+                      ? "bookmark-remove"
+                      : "bookmark-add"
+                  }
+                  size={22}
+                  color="white"
+                />
+                <Text className="text-white text-lg">
+                  {currentInteractedCard?.pinned ? "Unpin" : "Pin"}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity className="flex flex-row items-center justify-between px-2">
+              <View className="flex flex-row gap-2 items-center">
+                <MaterialIcons name="api" size={22} color="white" />
+                <Text className="text-white text-lg">Regenerate</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity className="flex flex-row items-center justify-between px-2">
+              <View className="flex flex-row gap-2 items-center">
+                <MaterialIcons
+                  name="delete-outline"
+                  size={22}
+                  color="#e85954"
+                />
+                <Text className="text-[#e85954] text-lg">Delete</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color="#e85954" />
+            </TouchableOpacity>
+          </View>
+        </BottomSheet>
+      </Portal>
+    </View>
   );
 }
 
@@ -98,8 +173,18 @@ interface CardProps {
   generating: boolean;
   color?: string;
   onpress?: () => void;
+  onclick?: () => void;
+  pinned: boolean;
 }
-function Card({ _id, title, cards, generating, onpress }: CardProps) {
+function Card({
+  _id,
+  title,
+  cards,
+  generating,
+  onpress,
+  onclick,
+  pinned,
+}: CardProps) {
   const [deleted, setDeleted] = useState(false);
   const swipeTranslateX = useSharedValue(0);
   const pressed = useSharedValue(false);
@@ -177,9 +262,13 @@ function Card({ _id, title, cards, generating, onpress }: CardProps) {
         <Ionicons name="trash-bin" color="red" size={30} />
       </Animated.View>
       <GestureDetector gesture={pan}>
-        <Animated.View style={[transformStyle, { backgroundColor: "#1B998B" }]} className="w-[95%] h-36 rounded-lg px-6 py-3 relative">
+        <Animated.View
+          style={[transformStyle, { backgroundColor: "#1B998B" }]}
+          className="w-[95%] h-36 rounded-lg px-6 py-3 relative"
+        >
           <AnimatedTouch
             onLongPress={onpress}
+            onPress={onclick}
             className="flex-1 justify-between"
           >
             <View>
@@ -207,6 +296,13 @@ function Card({ _id, title, cards, generating, onpress }: CardProps) {
                 size={30}
               />
             </View>
+            {pinned ? (
+              <View className="absolute -right-3 top-0">
+                <Entypo name="pin" color="white" size={22} />
+              </View>
+            ) : (
+              <></>
+            )}
           </AnimatedTouch>
         </Animated.View>
       </GestureDetector>
@@ -251,5 +347,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10, // For Android
     backgroundColor: "black",
+  },
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 100,
   },
 });
