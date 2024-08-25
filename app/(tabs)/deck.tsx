@@ -68,7 +68,8 @@ export default function TabTwoScreen() {
     setSheetID("");
   };
   const goToForm = (flashCardId: string) => {
-    router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
+    // router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
+    router.push({ pathname: "/flash", params: { flashCardID: flashCardId } });
   };
   useFocusEffect(
     useCallback(() => {
