@@ -8,7 +8,7 @@ interface SectionHeaderProps {
 }
 export default function SectionHeader({ link, title }: SectionHeaderProps) {
   return (
-    <View className="flex flex-row items-end justify-between">
+    <View className="flex flex-row items-end justify-between mb-2">
       <Text className="text-white text-2xl font-bold">{title}</Text>
       <Link className="text-[#e3b367] text-sm text-center" href={link}>
         see more <Ionicons name="arrow-forward-outline"/>

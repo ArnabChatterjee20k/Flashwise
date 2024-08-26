@@ -24,8 +24,20 @@ export const getCards = query({
 });
 
 export const getFlashCard = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }) => {
+    const card = ctx.db.query("flash");
+    if (limit) return card.take(limit);
+    return card.collect();
+  },
+});
+
+export const getPinnedFlash = query({
   handler: async (ctx) => {
-    return ctx.db.query("flash").collect();
+    return ctx.db
+      .query("flash")
+      .filter((q) => q.eq(q.field("pinned"), true))
+      .collect();
   },
 });
 

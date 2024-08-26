@@ -3,28 +3,21 @@ import { AntDesign } from "@expo/vector-icons";
 import { Text, View,TouchableOpacity } from "react-native";
 
 export interface FlashCardProps {
-  title: string;
-  cards: string;
+  name: string;
   icon?: string;
-  quantifier?: string;
   color: string;
 }
 
 export default function FlashCard({
-  title,
-  cards,
+  name,
   icon,
-  quantifier,
   color,
 }: FlashCardProps) {
   return (
-    <TouchableOpacity className={`w-36 h-36 rounded-3xl p-5 justify-between`} style={{backgroundColor:color}}>
+    <TouchableOpacity className={`w-40 h-36 rounded-xl p-5 justify-evenly`} style={{backgroundColor:color}}>
       <AntDesign name={icon} size={30} color="black" />
       <View>
-        <Text className="font-semibold text-sm text-black">{title}</Text>
-        <Text className="font-bold text-2xl text-black">
-          {cards} {quantifier || "Q"}
-        </Text>
+        <Text numberOfLines={2} className="font-medium text-2xl text-black">{name}</Text>
       </View>
     </TouchableOpacity>
   );
