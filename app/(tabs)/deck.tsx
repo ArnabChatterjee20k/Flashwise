@@ -41,6 +41,7 @@ import Animated from "react-native-reanimated";
 import { Icon, Menu } from "react-native-paper";
 import { Portal } from "react-native-portalize";
 import { Id } from "@/convex/_generated/dataModel";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabTwoScreen() {
   const window = Dimensions.get("window");
@@ -79,13 +80,17 @@ export default function TabTwoScreen() {
   const setPinnedCard = useMutation(api.cards.updateFlashCard);
   return (
     <View
-      className="px-6 py-4"
-      style={{ backgroundColor: Colors.dark.background, flex: 1 }}
+      className="px-6 py-12"
+      style={{ backgroundColor: "#1F1D2B", flex: 1 }}
     >
       {currentInteractedCard && <View style={styles.blurOverlay}></View>}
-      <Text className="text-2xl text-white font-bold">Deck</Text>
+      <View>
+        <Text className="text-3xl text-white font-bold">My Deck</Text>
+        <Text className="text-lg text-white font-normal">See and create your flash cars</Text>
+      </View>
+      
       <FlatList
-        className="px-2 py-5"
+        className="px-2 pt-8 pb-6"
         ItemSeparatorComponent={() => <View className="my-3"></View>}
         data={cards}
         renderItem={({ item: { _id, name, generating, pinned } }) => (
@@ -230,7 +235,7 @@ function Card({
     const backgroundColor = interpolateColor(
       swipeTranslateX.value,
       [0, MAX_SWIPE],
-      ["#1B998B", "#FF0000"]
+      ["#272635", "#FF0000"]
     );
 
     return {
@@ -264,8 +269,8 @@ function Card({
       </Animated.View>
       <GestureDetector gesture={pan}>
         <Animated.View
-          style={[transformStyle, { backgroundColor: "#1B998B" }]}
-          className="w-[95%] h-36 rounded-lg px-6 py-3 relative"
+          style={[transformStyle, { backgroundColor: "#272635" }]}
+          className="w-[95%] h-24 rounded-lg px-6 py-3 relative"
         >
           <AnimatedTouch
             onLongPress={onpress}
@@ -273,28 +278,16 @@ function Card({
             className="flex-1 justify-between"
           >
             <View>
-              <Text className="text-base font-bold text-white">{title}</Text>
-              <Text className="text-base font-normal text-white">
+              <Text className="text-xl font-bold text-white">{title}</Text>
+              <Text className="text-lg font-normal text-white">
                 {cards} cards
               </Text>
             </View>
-            <View className="flex flex-row items-center gap-2">
-              {generating ? (
-                <Loader />
-              ) : (
-                <>
-                  <Text className="text-base font-medium text-white">
-                    Ready
-                  </Text>
-                  <FontAwesome name="rocket" color="white" size={22} />
-                </>
-              )}
-            </View>
-            <View className="absolute right-0 top-[40%] mx-3">
+            <View className="absolute right-0 top-[30%] mx-3">
               <Ionicons
                 name="chevron-forward-outline"
                 color="white"
-                size={30}
+                size={25}
               />
             </View>
             {pinned ? (
