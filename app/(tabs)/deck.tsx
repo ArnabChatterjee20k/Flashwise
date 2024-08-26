@@ -11,6 +11,7 @@ import {
   FlatList,
   Vibration,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import {
   FontAwesome,
@@ -52,7 +53,7 @@ export default function TabTwoScreen() {
     const flashCardId = await addFlashCard({ title: "Untitled" });
     router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
   };
-  const cards = useQuery(api.cards.getFlashCard,{});
+  const cards = useQuery(api.cards.getFlashCard, {});
   const snapPoints = useMemo(() => ["25%"], []);
   const sheetRef = useRef<BottomSheet>(null);
   const [sheetID, setSheetID] = useState("");
@@ -68,16 +69,50 @@ export default function TabTwoScreen() {
   const onCloseSheet = () => {
     setSheetID("");
   };
-  const goToForm = (flashCardId: string) => {
+  const goToFlash = (flashCardId: string) => {
     // router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
     router.push({ pathname: "/flash", params: { flashCardID: flashCardId } });
   };
+  const goToForm = (flashCardId: string) => {
+    router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
+  };
+
   useFocusEffect(
     useCallback(() => {
       return () => sheetRef.current?.close();
     }, [])
   );
   const setPinnedCard = useMutation(api.cards.updateFlashCard);
+  const deleteFlash = useMutation(api.cards.deleteCard);
+
+  async function remove(id: Id<"flash">, title: string) {
+    Alert.alert(
+      "Delete Flash Card",
+      `Deleting ${title}`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteFlash({ id: id });
+            } catch (error) {
+            } finally {
+              alert("deleted");
+            }
+          },
+          style: "destructive",
+        },
+      ],
+      {
+        cancelable: true,
+      }
+    );
+  }
+
   return (
     <View
       className="px-6 py-12"
@@ -86,11 +121,14 @@ export default function TabTwoScreen() {
       {currentInteractedCard && <View style={styles.blurOverlay}></View>}
       <View>
         <Text className="text-3xl text-white font-bold">My Deck</Text>
-        <Text className="text-lg text-white font-normal">See and create your flash cars</Text>
+        <Text className="text-lg text-white font-normal">
+          See and create your flash cars
+        </Text>
       </View>
-      
+
       <FlatList
-        className="px-2 pt-8 pb-6"
+        className="px-2 pt-8"
+        contentContainerStyle={{ paddingBottom: 140 }}
         ItemSeparatorComponent={() => <View className="my-3"></View>}
         data={cards}
         renderItem={({ item: { _id, name, generating, pinned } }) => (
@@ -101,7 +139,7 @@ export default function TabTwoScreen() {
             pinned={pinned || false}
             cards={12}
             onpress={() => openSheet(_id)}
-            onclick={() => goToForm(_id)}
+            onclick={() => goToFlash(_id)}
           />
         )}
       />
@@ -147,14 +185,22 @@ export default function TabTwoScreen() {
               </View>
               <MaterialIcons name="chevron-right" size={22} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity className="flex flex-row items-center justify-between px-2">
+            <TouchableOpacity
+              onPress={() => goToForm(currentInteractedCard?._id)}
+              className="flex flex-row items-center justify-between px-2"
+            >
               <View className="flex flex-row gap-2 items-center">
                 <MaterialIcons name="api" size={22} color="white" />
-                <Text className="text-white text-lg">Regenerate</Text>
+                <Text className="text-white text-lg">Edit</Text>
               </View>
               <MaterialIcons name="chevron-right" size={22} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity className="flex flex-row items-center justify-between px-2">
+            <TouchableOpacity
+              className="flex flex-row items-center justify-between px-2"
+              onPress={() =>
+                remove(currentInteractedCard?._id, currentInteractedCard?.name)
+              }
+            >
               <View className="flex flex-row gap-2 items-center">
                 <MaterialIcons
                   name="delete-outline"
@@ -196,10 +242,42 @@ function Card({
   const pressed = useSharedValue(false);
   const WIDTH_SCREEN = Dimensions.get("window").width;
   const MAX_SWIPE = WIDTH_SCREEN - 10;
-
-  async function remove(title: string) {
-    setDeleted(true);
-    alert(`Deleted ${title}`);
+  const deleteFlash = useMutation(api.cards.deleteCard);
+  async function remove(id: Id<"flash">) {
+    Alert.alert(
+      "Delete Flash Card",
+      `Deleting ${title}`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => {
+            swipeTranslateX.value = withSpring(0);
+          },
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteFlash({ id: id });
+              setDeleted(true);
+              swipeTranslateX.value = withSpring(MAX_SWIPE);
+            } catch (error) {
+              swipeTranslateX.value = withSpring(0);
+            } finally {
+              alert("deleted");
+            }
+          },
+          style: "destructive",
+        },
+      ],
+      {
+        cancelable: true,
+        onDismiss() {
+          swipeTranslateX.value = withSpring(0);
+        },
+      }
+    );
   }
 
   const pan = Gesture.Pan()
@@ -207,12 +285,12 @@ function Card({
       pressed.value = true;
     })
     .onChange((e) => {
-      if (e.translationX > 0 && e.translationX < MAX_SWIPE) {
+      if (e.translationX > 0) {
         swipeTranslateX.value = e.translationX;
       }
     })
     .onFinalize(() => {
-      const isShouldDelete = swipeTranslateX.value >= MAX_SWIPE - 20;
+      const isShouldDelete = swipeTranslateX.value >= MAX_SWIPE - 150;
 
       if (isShouldDelete) {
         swipeTranslateX.value = withTiming(
@@ -220,7 +298,7 @@ function Card({
           undefined,
           (isDone) => {
             if (isDone) {
-              runOnJS(remove)(title);
+              runOnJS(remove)(_id as Id<"flash">);
             }
           }
         );

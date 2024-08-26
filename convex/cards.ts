@@ -23,6 +23,13 @@ export const getCards = query({
   },
 });
 
+export const deleteCard = mutation({
+  args: { id: v.union(v.id("flash"), v.id("cards")) },
+  handler(ctx, { id }) {
+    ctx.db.delete(id);
+  },
+});
+
 export const getFlashCard = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit }) => {
