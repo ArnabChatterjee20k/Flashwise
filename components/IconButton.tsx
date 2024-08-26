@@ -2,6 +2,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { TouchableOpacity, TouchableOpacityProps } from "react-native";
 
 interface Props {
+  color?:string,
   icon:
     | "link"
     | "stepforward"
@@ -305,6 +306,7 @@ interface Props {
 
 export default function IconButton({
   icon,
+  color,
   ...props
 }: Props & TouchableOpacityProps) {
   return (
@@ -312,7 +314,7 @@ export default function IconButton({
       {...props}
       className="w-12 h-12 rounded-full flex items-center justify-center"
     >
-      <AntDesign name={icon} size={20} color="white" />
+      <AntDesign name={icon} size={20} color={color||"white"} />
     </TouchableOpacity>
   );
 }

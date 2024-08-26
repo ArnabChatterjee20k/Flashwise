@@ -9,6 +9,8 @@ import {
   Text,
   Vibration,
   ScrollView,
+  Dimensions,
+  Alert,
 } from "react-native";
 import { PaperProvider, TextInput, Menu, Divider } from "react-native-paper";
 import BottomSheet from "@gorhom/bottom-sheet";
@@ -55,6 +57,8 @@ export default function Form() {
     }, [])
   );
 
+  const createCard = useMutation(api.cards.createCard);
+
   return (
     <PaperProvider>
       <GestureHandlerRootView>
@@ -94,6 +98,32 @@ export default function Form() {
             onCancel={() => ref?.current?.close()}
           />
         </BottomSheet>
+        <View
+          className="absolute"
+          style={{
+            top: Dimensions.get("window").height - 30,
+            left: Dimensions.get("window").width - 80,
+          }}
+        >
+          <IconButton
+            onPress={() =>
+              createCard({
+                question: "not added",
+                answer: "not added",
+                flashCardId: params.flashCardID,
+              })
+            }
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 10, // For Android
+              backgroundColor: "black",
+            }}
+            icon="plus"
+          />
+        </View>
       </GestureHandlerRootView>
     </PaperProvider>
   );
@@ -172,6 +202,35 @@ function Card({ onHold, question, answer, cardNumber, id }: CardProps) {
     if (answer) setAns(answer);
   }, [question, answer]);
   const updateData = useMutation(api.cards.updateCardData);
+  const deleteFlash = useMutation(api.cards.deleteCard);
+
+  async function remove(id: Id<"cards">) {
+    Alert.alert(
+      "Delete",
+      `Your card will be deleted`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteFlash({ id: id });
+            } catch (error) {
+            } finally {
+              alert("deleted");
+            }
+          },
+          style: "destructive",
+        },
+      ],
+      {
+        cancelable: true,
+      }
+    );
+  }
   const update = async () => {
     setLoading(true);
     try {
@@ -188,7 +247,7 @@ function Card({ onHold, question, answer, cardNumber, id }: CardProps) {
   };
   return (
     <View
-      className="rounded-2xl p-4 my-2"
+      className="rounded-2xl p-4 my-2 relative"
       style={{ backgroundColor: "#242e31" }}
     >
       <View className="flex-row items-center justify-between">
@@ -228,6 +287,7 @@ function Card({ onHold, question, answer, cardNumber, id }: CardProps) {
           </ThemedText>
         </TouchableOpacity>
       </View>
+      <IconButton onPress={()=>remove(id as Id<"cards">)} icon="delete" color="#ef4444" className="absolute right-5 top-1"/>
     </View>
   );
 }

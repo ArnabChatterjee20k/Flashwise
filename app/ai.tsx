@@ -2,7 +2,7 @@ import ThemedText from "@/components/ThemedText";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useAction, useQuery } from "convex/react";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, router } from "expo-router";
 import React, { useState } from "react";
 import {
   View,
@@ -43,7 +43,7 @@ const Form = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>Cards Count</Text>
           <TextInput
             style={styles.input}
             value={count}
@@ -55,13 +55,18 @@ const Form = () => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() =>
-            createWithAIAction({
-              prompt: prompt,
-              count: parseInt(count),
-              flashCardId: params.flashcardID,
-            })
-          }
+          onPress={async () => {
+            try {
+              await createWithAIAction({
+                prompt: prompt,
+                count: parseInt(count),
+                flashCardId: params.flashcardID,
+              });
+              router.back()
+            } catch (error) {
+              alert("some erorr occured")
+            }
+          }}
         >
           <Text style={styles.buttonText}>
             {projectDetails?.generating ? "Loading..." : "Submit"}

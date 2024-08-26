@@ -131,13 +131,13 @@ export default function TabTwoScreen() {
         contentContainerStyle={{ paddingBottom: 140 }}
         ItemSeparatorComponent={() => <View className="my-3"></View>}
         data={cards}
-        renderItem={({ item: { _id, name, generating, pinned } }) => (
+        renderItem={({ item: { _id, name, generating, pinned,count } }) => (
           <Card
             _id={_id}
             title={name}
             generating={generating || false}
             pinned={pinned || false}
-            cards={12}
+            cards={count || 0}
             onpress={() => openSheet(_id)}
             onclick={() => goToFlash(_id)}
           />

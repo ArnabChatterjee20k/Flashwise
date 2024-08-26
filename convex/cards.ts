@@ -93,9 +93,18 @@ export const updateCardData = mutation({
 });
 
 export const updateFlashCardStatus = internalMutation({
-  args: { id: v.id("flash"), status: v.boolean() },
-  handler: async (ctx, { id, status }) => {
-    await ctx.db.patch(id, { generating: status });
+  args: {
+    id: v.id("flash"),
+    status: v.boolean(),
+    count: v.optional(v.number()),
+  },
+  handler: async (ctx, { id, status, count }) => {
+    const card = await ctx.db.get(id);
+    const prevCount = card?.count || 0;
+    await ctx.db.patch(id, {
+      generating: status,
+      ...(count && { count: prevCount + count }),
+    });
   },
 });
 
@@ -158,6 +167,7 @@ export const createQuestionAI = action({
       await ctx.runMutation(internal.cards.updateFlashCardStatus, {
         id: flashCardId,
         status: false,
+        count: count,
       });
     }
   },

@@ -15,5 +15,6 @@ export default defineSchema({
     createdAt: v.number(),
     generating: v.optional(v.boolean()),
     color: v.optional(v.string()),
+    count:v.optional(v.number())
   }),
 });
