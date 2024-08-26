@@ -30,7 +30,7 @@ export function FlashCardList({ cards, title }: FlashCardListProps) {
           }}
         >
           {pair.map((data) => (
-            <FlashCard name={data.name} key={data.name} color={data.color} icon={data.icon}/>
+            <FlashCard _id={data._id} name={data.name} key={data.name} color={data.color} icon={data.icon}/>
           ))}
         </View>
       ))}

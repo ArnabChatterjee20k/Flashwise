@@ -52,7 +52,7 @@ export default function TabTwoScreen() {
     const flashCardId = await addFlashCard({ title: "Untitled" });
     router.push({ pathname: "/form", params: { flashCardID: flashCardId } });
   };
-  const cards = useQuery(api.cards.getFlashCard);
+  const cards = useQuery(api.cards.getFlashCard,{});
   const snapPoints = useMemo(() => ["25%"], []);
   const sheetRef = useRef<BottomSheet>(null);
   const [sheetID, setSheetID] = useState("");

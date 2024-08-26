@@ -46,7 +46,7 @@ export default function CustomCard() {
       <Portal>
         <BottomSheet
           ref={sheetRef}
-          index={0}
+          index={-1}
           snapPoints={snapPoints}
           enablePanDownToClose={true}
           handleIndicatorStyle={{ backgroundColor: "white" }}
