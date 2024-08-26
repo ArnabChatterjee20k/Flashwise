@@ -14,13 +14,25 @@ import Swiper from "react-native-deck-swiper";
 import { useQuery } from "convex/react";
 import { useLocalSearchParams } from "expo-router";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { Portal } from "react-native-portalize";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 export default function CustomCard() {
+  const snapPoints = React.useMemo(() => ["90%"], []);
+  const sheetRef = React.useRef<BottomSheet>(null);
+  const [content, setContent] = React.useState("");
+  function getFullAnswer(answer: string) {
+    setContent(answer);
+    sheetRef.current?.expand();
+  }
   return (
     <View style={styles.container}>
       <RedFilledCircle />
       <RedOutlinedCircle />
       <View className="px-2 justify-center flex-1 space-y-1 relative">
-        <SwiperArea />
+        <SwiperArea onFullAnswer={getFullAnswer} />
         <View className="flex-row w-full absolute bottom-[15%] left-[10]  justify-between space-x-4 px-4 -mb-10">
           <TouchableOpacity className="bg-[#d5724c] shadow-sm rounded-lg p-3 flex-row justify-center flex-1">
             <Text className="text-white font-bold text-xl">Undone</Text>
@@ -31,16 +43,33 @@ export default function CustomCard() {
           </TouchableOpacity>
         </View>
       </View>
+      <Portal>
+        <BottomSheet
+          ref={sheetRef}
+          index={0}
+          snapPoints={snapPoints}
+          enablePanDownToClose={true}
+          handleIndicatorStyle={{ backgroundColor: "white" }}
+          backgroundStyle={{ backgroundColor: "#494949" }}
+        >
+          <View className="flex-1 px-5 py-5">
+            <BottomSheetScrollView style={{ height: 330, flex: 1 }}>
+              <ThemedText className="font-medium font-mono text-xl text-[#EEE3D7]">
+                {content}
+              </ThemedText>
+            </BottomSheetScrollView>
+          </View>
+        </BottomSheet>
+      </Portal>
     </View>
   );
 }
 
-const question =
-  "What is the name of the iconic yellow umbrella that appears throughout the series?";
-const answer =
-  "The yellow umbrella is a symbol of Ted and Robin's relationship, as they both share a romantic connection to it.";
+interface SwipeAreaProps {
+  onFullAnswer: (answer: string) => void;
+}
 
-function SwiperArea() {
+function SwiperArea({ onFullAnswer }: SwipeAreaProps) {
   const params = useLocalSearchParams<{ flashCardID: Id<"flash"> }>();
   const cards = useQuery(api.cards.getCards, {
     flashCardId: params.flashCardID,
@@ -53,7 +82,12 @@ function SwiperArea() {
         cards={cards || []}
         verticalSwipe={false}
         renderCard={({ question, answer }, index) => (
-          <FlashCard question={question} answer={answer} key={index} />
+          <FlashCard
+            onFullAnswer={onFullAnswer}
+            question={question}
+            answer={answer}
+            key={index}
+          />
         )}
         stackSize={4}
         infinite
@@ -68,35 +102,43 @@ function SwiperArea() {
 interface FlashCardProps {
   question: string;
   answer: string;
+  onFullAnswer: (answer: string) => void;
 }
-function FlashCard({ question, answer }: FlashCardProps) {
+function FlashCard({ question, answer, onFullAnswer }: FlashCardProps) {
   return (
-    <View className="bg-[#494949] shadow-sm shadow-black py-6 pt-12 px-4 rounded-3xl space-y-4 relative overflow-hidden h-[500px]">
-      <ThemedText className="font-medium font-mono text-3xl text-[#EEE3D7]">
-        {question}
-      </ThemedText>
-      <ScrollView className="max-h-[150px]" persistentScrollbar={false}>
-          <Text numberOfLines={5} className="text-[#E2D8CC] text-xl">{answer}</Text>
-      </ScrollView>
-      <View className="absolute -bottom-[15%] -left-[8%] my-2">
-        <Icon
-          source={require("../assets/images/Pattern.png")}
-          size={150}
-          color="#84817F"
-        />
-      </View>
-      <View className="flex-row-reverse flex-1 ">
-        <TouchableOpacity className="flex-col items-end w-full self-end">
-          <AntDesign
-            name="arrowright"
-            color="#E85E56"
-            size={60}
-            className="self-end"
+    <GestureHandlerRootView>
+      <View className="bg-[#494949] shadow-sm shadow-black py-6 pt-12 px-4 rounded-3xl space-y-4 relative overflow-hidden h-[500px]">
+        <ThemedText className="font-medium font-mono text-3xl text-[#EEE3D7]">
+          {question}
+        </ThemedText>
+        <ScrollView className="max-h-[150px]" persistentScrollbar={false}>
+          <Text numberOfLines={5} className="text-[#E2D8CC] text-xl">
+            {answer}
+          </Text>
+        </ScrollView>
+        <View className="absolute -bottom-[15%] -left-[8%] my-2">
+          <Icon
+            source={require("../assets/images/Pattern.png")}
+            size={150}
+            color="#84817F"
           />
-          <Text className="text-[#E2D8CC] text-xl">Read Full Answer</Text>
-        </TouchableOpacity>
+        </View>
+        <View className="flex-row-reverse flex-1 ">
+          <TouchableOpacity
+            onPress={() => onFullAnswer(answer)}
+            className="flex-col items-end w-full self-end"
+          >
+            <AntDesign
+              name="arrowright"
+              color="#E85E56"
+              size={60}
+              className="self-end"
+            />
+            <Text className="text-[#E2D8CC] text-xl">Read Full Answer</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
