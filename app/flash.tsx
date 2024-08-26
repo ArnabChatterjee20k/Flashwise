@@ -1,17 +1,27 @@
 import ThemedText from "@/components/ThemedText";
 import { AntDesign } from "@expo/vector-icons";
 import * as React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { Button, Card, Icon, Text } from "react-native-paper";
-
+import Swiper from "react-native-deck-swiper";
+import { useQuery } from "convex/react";
+import { useLocalSearchParams } from "expo-router";
+import { api } from "@/convex/_generated/api";
 export default function CustomCard() {
   return (
     <View style={styles.container}>
       <RedFilledCircle />
       <RedOutlinedCircle />
-      <View className="px-2 justify-center flex-1 space-y-7">
-        <FlashCard />
-        <View className="flex-row w-full justify-between space-x-4 px-4 -mb-10">
+      <View className="px-2 justify-center flex-1 space-y-1 relative">
+        <SwiperArea />
+        <View className="flex-row w-full absolute bottom-[15%] left-[10]  justify-between space-x-4 px-4 -mb-10">
           <TouchableOpacity className="bg-[#d5724c] shadow-sm rounded-lg p-3 flex-row justify-center flex-1">
             <Text className="text-white font-bold text-xl">Undone</Text>
           </TouchableOpacity>
@@ -19,23 +29,55 @@ export default function CustomCard() {
           <TouchableOpacity className="bg-[#09a57a] shadow-sm  rounded-lg p-3 flex-row justify-center flex-1">
             <Text className="text-white font-bold text-xl">Read</Text>
           </TouchableOpacity>
-
         </View>
       </View>
     </View>
   );
 }
+
 const question =
   "What is the name of the iconic yellow umbrella that appears throughout the series?";
 const answer =
   "The yellow umbrella is a symbol of Ted and Robin's relationship, as they both share a romantic connection to it.";
-function FlashCard() {
+
+function SwiperArea() {
+  const params = useLocalSearchParams<{ flashCardID: Id<"flash"> }>();
+  const cards = useQuery(api.cards.getCards, {
+    flashCardId: params.flashCardID,
+  });
+  const marginTop = Math.floor(Dimensions.get("window").width / 6);
+  if (!cards?.length) return;
   return (
-    <View className="bg-[#494949] shadow-sm shadow-black py-6 pt-12 px-4 rounded-3xl space-y-4 relative overflow-hidden min-h-[500px]">
+    <View className="w-full flex-1 mr-[100%]">
+      <Swiper
+        cards={cards || []}
+        verticalSwipe={false}
+        renderCard={({ question, answer }, index) => (
+          <FlashCard question={question} answer={answer} key={index} />
+        )}
+        stackSize={4}
+        infinite
+        animateCardOpacity
+        containerStyle={styles.swiper}
+        marginTop={marginTop}
+      ></Swiper>
+    </View>
+  );
+}
+
+interface FlashCardProps {
+  question: string;
+  answer: string;
+}
+function FlashCard({ question, answer }: FlashCardProps) {
+  return (
+    <View className="bg-[#494949] shadow-sm shadow-black py-6 pt-12 px-4 rounded-3xl space-y-4 relative overflow-hidden h-[500px]">
       <ThemedText className="font-medium font-mono text-3xl text-[#EEE3D7]">
         {question}
       </ThemedText>
-      <Text className="text-[#E2D8CC] text-xl">{answer}</Text>
+      <ScrollView className="max-h-[150px]" persistentScrollbar={false}>
+          <Text numberOfLines={5} className="text-[#E2D8CC] text-xl">{answer}</Text>
+      </ScrollView>
       <View className="absolute -bottom-[15%] -left-[8%] my-2">
         <Icon
           source={require("../assets/images/Pattern.png")}
@@ -44,15 +86,15 @@ function FlashCard() {
         />
       </View>
       <View className="flex-row-reverse flex-1 ">
-        <View className="flex-col items-end w-full self-end">
+        <TouchableOpacity className="flex-col items-end w-full self-end">
           <AntDesign
             name="arrowright"
             color="#E85E56"
             size={60}
             className="self-end"
           />
-          <Text className="text-[#E2D8CC] text-xl">Keep Swiping</Text>
-        </View>
+          <Text className="text-[#E2D8CC] text-xl">Read Full Answer</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -77,6 +119,10 @@ function WhiteOutlinedCircle() {
 }
 
 const styles = StyleSheet.create({
+  swiper: {},
+  wrapper: {
+    backgroundColor: "transparent",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
