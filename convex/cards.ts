@@ -10,6 +10,7 @@ import { api, fullApi, internal } from "./_generated/api";
 import { generateCards } from "./utils/ai";
 import { CardAISchema } from "./validators";
 import { z } from "zod";
+import { Id } from "./_generated/dataModel";
 
 export const getCards = query({
   args: { flashCardId: v.id("flash") },
@@ -25,8 +26,18 @@ export const getCards = query({
 
 export const deleteCard = mutation({
   args: { id: v.union(v.id("flash"), v.id("cards")) },
-  handler(ctx, { id }) {
-    ctx.db.delete(id);
+  handler: async (ctx, { id }) => {
+    try {
+      await ctx.db.delete(id)
+    } catch (error) {
+      console.log("flash error",error)
+    }
+    const deletion:Array<Promise<any>> = []
+    const cards = await ctx.db.query("cards").withIndex("by_flashid").filter(q=>q.eq(q.field("flashId"),id as Id<"flash">)).collect();
+    for (const card of cards) {
+      deletion.push(ctx.db.delete(card._id));
+    }
+    await Promise.allSettled(deletion)
   },
 });
 
